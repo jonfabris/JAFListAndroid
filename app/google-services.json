@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "708488755194",
+    "project_id": "jaflist-4df4a",
+    "storage_bucket": "jaflist-4df4a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:708488755194:android:5763ec5fb9af1133b41643",
+        "android_client_info": {
+          "package_name": "jafproductions.JAFList"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "708488755194-vm5aqtof9j5ghruc972pc6ah25ia591d.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "jafproductions.JAFList",
+            "certificate_hash": "162cec6686ba22de8110ac2688dcdb664330a032"
+          }
+        },
+        {
+          "client_id": "708488755194-abrmpd4bkfikq3gp46cko4mh4sgspd78.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGyDkOtYamfnqKF3-hmMl0S5ck8_Y3qYs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "708488755194-abrmpd4bkfikq3gp46cko4mh4sgspd78.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "708488755194-knr8m0aqesui5mk1iv6fb5c5h7bb300q.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "jafproductions.JAFList"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
