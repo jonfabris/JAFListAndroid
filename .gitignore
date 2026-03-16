@@ -37,4 +37,4 @@ local.properties
 proguard/
 
 # Google Services (uncomment if you don't want this in version control)
-# google-services.json
+google-services.json
