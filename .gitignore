@@ -1,0 +1,40 @@
+# Built artifacts
+build/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Gradle
+.gradle/
+local.properties
+
+# Android Studio / IntelliJ IDEA
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/.name
+.idea/deploymentTargetSelector.xml
+.idea/deviceManager.xml
+.idea/migrations.xml
+.idea/runConfigurations.xml
+*.iml
+
+# Kotlin
+.kotlin/
+
+# macOS
+.DS_Store
+
+# Keystore files (add exceptions for debug.keystore if needed)
+*.jks
+*.keystore
+
+# ProGuard
+proguard/
+
+# Google Services (uncomment if you don't want this in version control)
+# google-services.json
