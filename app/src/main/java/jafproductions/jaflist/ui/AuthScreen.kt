@@ -31,11 +31,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
 import jafproductions.jaflist.R
+import jafproductions.jaflist.ui.theme.JAFListTheme
 import jafproductions.jaflist.viewmodels.AuthViewModel
 
 @Composable
@@ -47,8 +49,6 @@ fun AuthScreen(authViewModel: AuthViewModel) {
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        // Always attempt to extract the account — resultCode is not always RESULT_OK
-        // even on success with Google Sign-In
         val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
         try {
             val account = task.getResult(ApiException::class.java)
@@ -59,13 +59,25 @@ fun AuthScreen(authViewModel: AuthViewModel) {
                 authViewModel.setError("Sign-in failed: no ID token received.")
             }
         } catch (e: ApiException) {
-            // Status code 12501 = user cancelled — don't show an error
             if (e.statusCode != 12501) {
                 authViewModel.setError("Sign-in failed (${e.statusCode}). Please try again.")
             }
         }
     }
 
+    AuthScreenContent(
+        errorMessage = errorMessage,
+        isLoading = isLoading,
+        onSignIn = { launcher.launch(authViewModel.getSignInIntent(context)) }
+    )
+}
+
+@Composable
+private fun AuthScreenContent(
+    errorMessage: String?,
+    isLoading: Boolean,
+    onSignIn: () -> Unit
+) {
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -115,7 +127,7 @@ fun AuthScreen(authViewModel: AuthViewModel) {
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = errorMessage ?: "",
+                            text = errorMessage,
                             color = Color(0xFFD32F2F),
                             fontSize = 14.sp
                         )
@@ -130,9 +142,7 @@ fun AuthScreen(authViewModel: AuthViewModel) {
                 )
             } else {
                 OutlinedButton(
-                    onClick = {
-                        launcher.launch(authViewModel.getSignInIntent(context))
-                    },
+                    onClick = onSignIn,
                     modifier = Modifier
                         .width(280.dp)
                         .height(44.dp),
@@ -152,5 +162,33 @@ fun AuthScreen(authViewModel: AuthViewModel) {
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true, name = "AuthScreen - Sign In", showSystemUi = true)
+@Composable
+private fun AuthScreenPreview() {
+    JAFListTheme(dynamicColor = false) {
+        AuthScreenContent(errorMessage = null, isLoading = false, onSignIn = {})
+    }
+}
+
+@Preview(showBackground = true, name = "AuthScreen - Loading", showSystemUi = true)
+@Composable
+private fun AuthScreenLoadingPreview() {
+    JAFListTheme(dynamicColor = false) {
+        AuthScreenContent(errorMessage = null, isLoading = true, onSignIn = {})
+    }
+}
+
+@Preview(showBackground = true, name = "AuthScreen - Error", showSystemUi = true)
+@Composable
+private fun AuthScreenErrorPreview() {
+    JAFListTheme(dynamicColor = false) {
+        AuthScreenContent(
+            errorMessage = "Sign-in failed (7). Please try again.",
+            isLoading = false,
+            onSignIn = {}
+        )
     }
 }

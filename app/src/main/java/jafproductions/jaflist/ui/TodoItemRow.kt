@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,10 +43,12 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import jafproductions.jaflist.models.TodoItem
+import jafproductions.jaflist.ui.theme.JAFListTheme
 import jafproductions.jaflist.viewmodels.AppViewModel
 import kotlin.math.roundToInt
 
@@ -61,6 +64,27 @@ fun TodoItemRow(
     depth: Int,
     appViewModel: AppViewModel
 ) {
+    TodoItemRowContent(
+        item = item,
+        depth = depth,
+        onToggleCompletion = { appViewModel.toggleItemCompletion(folderId, item.id) },
+        onDelete = { appViewModel.deleteItem(folderId, item.id) },
+        onAddChild = { text -> appViewModel.addChildItem(folderId, item.id, text) },
+        onEdit = { text -> appViewModel.editItem(folderId, item.id, text) },
+        onToggleExpansion = { appViewModel.toggleItemExpansion(folderId, item.id) }
+    )
+}
+
+@Composable
+private fun TodoItemRowContent(
+    item: TodoItem,
+    depth: Int,
+    onToggleCompletion: () -> Unit,
+    onDelete: () -> Unit,
+    onAddChild: (String) -> Unit,
+    onEdit: (String) -> Unit,
+    onToggleExpansion: () -> Unit
+) {
     var isEditing by remember(item.id) { mutableStateOf(false) }
     var editText by remember(item.id) { mutableStateOf(item.text) }
     var showAddSubitemDialog by remember { mutableStateOf(false) }
@@ -73,23 +97,22 @@ fun TodoItemRow(
         label = "swipe_offset"
     )
 
-    // Outer Box: fixed row height, clips the slide
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp)
+            .height(48.dp)
     ) {
         // Background action buttons — anchored to the right edge
         Row(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .height(56.dp)
+                .height(48.dp)
         ) {
             // Add Subitem (blue, left of delete)
             Box(
                 modifier = Modifier
                     .width(BUTTON_WIDTH_DP.dp)
-                    .height(56.dp)
+                    .height(48.dp)
                     .background(Color(0xFF1976D2))
                     .clickable {
                         newSubitemText = ""
@@ -108,10 +131,10 @@ fun TodoItemRow(
             Box(
                 modifier = Modifier
                     .width(BUTTON_WIDTH_DP.dp)
-                    .height(56.dp)
+                    .height(48.dp)
                     .background(Color(0xFFD32F2F))
                     .clickable {
-                        appViewModel.deleteItem(folderId, item.id)
+                        onDelete()
                         rawOffsetX = 0f
                     },
                 contentAlignment = Alignment.Center
@@ -128,7 +151,7 @@ fun TodoItemRow(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
+                .height(48.dp)
                 .offset { IntOffset(animatedOffset.roundToInt(), 0) }
                 .pointerInput(item.id) {
                     detectHorizontalDragGestures(
@@ -149,20 +172,14 @@ fun TodoItemRow(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                    .padding(vertical = 7.dp, horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Depth indent
                 if (depth > 0) {
                     Spacer(modifier = Modifier.width((depth * 20).dp))
                 }
 
-                // Checkbox icon
-                val checkboxIcon = if (item.isCompleted) {
-                    Icons.Default.CheckBox
-                } else {
-                    Icons.Default.CheckBoxOutlineBlank
-                }
+                val checkboxIcon = if (item.isCompleted) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank
                 val checkboxTint = if (item.isCompleted) Color(0xFF388E3C) else Color(0xFF9E9E9E)
 
                 Icon(
@@ -171,15 +188,13 @@ fun TodoItemRow(
                     tint = checkboxTint,
                     modifier = Modifier
                         .size(20.dp)
-                        .clickable { appViewModel.toggleItemCompletion(folderId, item.id) }
+                        .clickable { onToggleCompletion() }
                 )
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Text area
                 Box(
-                    modifier = Modifier
-                        .weight(1f),
+                    modifier = Modifier.weight(1f),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     if (isEditing) {
@@ -210,12 +225,11 @@ fun TodoItemRow(
                     }
                 }
 
-                // Done button while editing
                 if (isEditing) {
                     TextButton(
                         onClick = {
                             if (editText.isNotBlank()) {
-                                appViewModel.editItem(folderId, item.id, editText.trim())
+                                onEdit(editText.trim())
                             }
                             isEditing = false
                         }
@@ -224,20 +238,15 @@ fun TodoItemRow(
                     }
                 }
 
-                // Expansion chevron (only when not editing)
                 if (item.children.isNotEmpty() && !isEditing) {
-                    val chevronIcon = if (item.isExpanded) {
-                        Icons.Default.KeyboardArrowDown
-                    } else {
-                        Icons.Default.KeyboardArrowRight
-                    }
+                    val chevronIcon = if (item.isExpanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowRight
                     Icon(
                         imageVector = chevronIcon,
                         contentDescription = if (item.isExpanded) "Collapse" else "Expand",
                         tint = Color(0xFF9E9E9E),
                         modifier = Modifier
                             .size(20.dp)
-                            .clickable { appViewModel.toggleItemExpansion(folderId, item.id) }
+                            .clickable { onToggleExpansion() }
                     )
                 }
 
@@ -246,7 +255,6 @@ fun TodoItemRow(
         }
     }
 
-    // Add Subitem dialog — rendered outside the Box as a dialog overlay
     if (showAddSubitemDialog) {
         AlertDialog(
             onDismissRequest = { showAddSubitemDialog = false },
@@ -263,7 +271,7 @@ fun TodoItemRow(
                 TextButton(
                     onClick = {
                         if (newSubitemText.isNotBlank()) {
-                            appViewModel.addChildItem(folderId, item.id, newSubitemText.trim())
+                            onAddChild(newSubitemText.trim())
                             showAddSubitemDialog = false
                         }
                     }
@@ -276,6 +284,60 @@ fun TodoItemRow(
                     Text("Cancel")
                 }
             }
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "TodoItemRow - Normal")
+@Composable
+private fun TodoItemRowNormalPreview() {
+    JAFListTheme(dynamicColor = false) {
+        TodoItemRowContent(
+            item = TodoItem(id = "1", text = "Buy milk"),
+            depth = 0,
+            onToggleCompletion = {}, onDelete = {}, onAddChild = {}, onEdit = {}, onToggleExpansion = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "TodoItemRow - Completed")
+@Composable
+private fun TodoItemRowCompletedPreview() {
+    JAFListTheme(dynamicColor = false) {
+        TodoItemRowContent(
+            item = TodoItem(id = "2", text = "Buy eggs", isCompleted = true),
+            depth = 0,
+            onToggleCompletion = {}, onDelete = {}, onAddChild = {}, onEdit = {}, onToggleExpansion = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "TodoItemRow - With Children Expanded")
+@Composable
+private fun TodoItemRowWithChildrenPreview() {
+    val child1 = TodoItem(id = "4", text = "Apples")
+    val child2 = TodoItem(id = "5", text = "Bread", isCompleted = true)
+    val parent = TodoItem(id = "3", text = "Shopping trip", isExpanded = true, children = listOf(child1, child2))
+    JAFListTheme(dynamicColor = false) {
+        Column {
+            TodoItemRowContent(item = parent, depth = 0,
+                onToggleCompletion = {}, onDelete = {}, onAddChild = {}, onEdit = {}, onToggleExpansion = {})
+            TodoItemRowContent(item = child1, depth = 1,
+                onToggleCompletion = {}, onDelete = {}, onAddChild = {}, onEdit = {}, onToggleExpansion = {})
+            TodoItemRowContent(item = child2, depth = 1,
+                onToggleCompletion = {}, onDelete = {}, onAddChild = {}, onEdit = {}, onToggleExpansion = {})
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "TodoItemRow - Indented (depth 2)")
+@Composable
+private fun TodoItemRowIndentedPreview() {
+    JAFListTheme(dynamicColor = false) {
+        TodoItemRowContent(
+            item = TodoItem(id = "6", text = "Nested sub-task"),
+            depth = 2,
+            onToggleCompletion = {}, onDelete = {}, onAddChild = {}, onEdit = {}, onToggleExpansion = {}
         )
     }
 }

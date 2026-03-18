@@ -7,12 +7,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -22,11 +22,16 @@ import androidx.navigation.navArgument
 import jafproductions.jaflist.ui.AuthScreen
 import jafproductions.jaflist.ui.FolderScreen
 import jafproductions.jaflist.ui.MainScreen
+import jafproductions.jaflist.ui.RestoreBackupScreen
 import jafproductions.jaflist.ui.theme.JAFListTheme
 import jafproductions.jaflist.viewmodels.AppViewModel
 import jafproductions.jaflist.viewmodels.AuthViewModel
 
 class MainActivity : ComponentActivity() {
+
+    private val authViewModel: AuthViewModel by viewModels()
+    private val appViewModel: AppViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -36,8 +41,6 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val authViewModel: AuthViewModel = viewModel()
-                    val appViewModel: AppViewModel = viewModel()
                     val isSignedIn by authViewModel.isSignedIn.collectAsState()
 
                     LaunchedEffect(isSignedIn) {
@@ -58,6 +61,13 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        if (authViewModel.isSignedIn.value) {
+            appViewModel.initializeCloud()
+        }
+    }
 }
 
 @Composable
@@ -76,6 +86,12 @@ fun AppNavigation(
                 navController = navController,
                 appViewModel = appViewModel,
                 authViewModel = authViewModel
+            )
+        }
+        composable("restore") {
+            RestoreBackupScreen(
+                appViewModel = appViewModel,
+                navController = navController
             )
         }
         composable(

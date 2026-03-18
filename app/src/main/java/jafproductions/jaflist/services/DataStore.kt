@@ -27,12 +27,20 @@ class DataStore(private val context: Context) {
 
     private val firebaseService = FirebaseService.getInstance(context)
     private val dataFile = File(context.filesDir, "jaflist_data.json")
+    private val backupService = BackupService(context)
+
+    init {
+        backupService.performAutoBackupIfNeeded(dataFile)
+    }
 
     private val _appData = MutableStateFlow(load())
     val appData: StateFlow<AppData> = _appData.asStateFlow()
 
     private val _syncStatus = MutableStateFlow(SyncStatus.IDLE)
     val syncStatus: StateFlow<SyncStatus> = _syncStatus.asStateFlow()
+
+    private val _lastSyncDate = MutableStateFlow<Long?>(null)
+    val lastSyncDate: StateFlow<Long?> = _lastSyncDate.asStateFlow()
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var debounceJob: Job? = null
@@ -111,6 +119,7 @@ class DataStore(private val context: Context) {
                     }
                 }
                 _syncStatus.value = SyncStatus.SYNCED
+                _lastSyncDate.value = System.currentTimeMillis()
             } catch (e: Exception) {
                 _syncStatus.value = SyncStatus.OFFLINE
             }
@@ -123,6 +132,20 @@ class DataStore(private val context: Context) {
             dataFile.writeText(jsonString)
         } catch (e: Exception) {
             // Silently fail local write; sync status will reflect issues
+        }
+    }
+
+    fun availableBackups(): List<BackupInfo> = backupService.listBackups()
+
+    fun restore(backup: BackupInfo) {
+        try {
+            backupService.restore(backup, dataFile)
+            // Stamp with current time so this data wins future cloud sync comparisons
+            val restored = load().copy(lastModified = Date())
+            _appData.value = restored
+            saveImmediately(restored)
+        } catch (e: Exception) {
+            // Silently fail
         }
     }
 

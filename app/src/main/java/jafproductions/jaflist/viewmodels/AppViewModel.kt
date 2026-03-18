@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import jafproductions.jaflist.models.AppData
 import jafproductions.jaflist.models.Folder
 import jafproductions.jaflist.models.TodoItem
+import jafproductions.jaflist.services.BackupInfo
 import jafproductions.jaflist.services.DataStore
 import jafproductions.jaflist.services.SyncStatus
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +20,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     val appData: StateFlow<AppData> = dataStore.appData
     val syncStatus: StateFlow<SyncStatus> = dataStore.syncStatus
+    val lastSyncDate: StateFlow<Long?> = dataStore.lastSyncDate
 
     fun initializeCloud() {
         viewModelScope.launch {
@@ -31,12 +33,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun addFolder(name: String) {
         val newFolder = Folder(id = UUID.randomUUID().toString(), name = name)
         val current = appData.value
-        dataStore.save(current.copy(folders = current.folders + newFolder, lastModified = Date()))
+        dataStore.saveImmediately(current.copy(folders = current.folders + newFolder, lastModified = Date()))
     }
 
     fun deleteFolder(folderId: String) {
         val current = appData.value
-        dataStore.save(current.copy(folders = current.folders.filter { it.id != folderId }, lastModified = Date()))
+        dataStore.saveImmediately(current.copy(folders = current.folders.filter { it.id != folderId }, lastModified = Date()))
     }
 
     // MARK: - Subfolder Operations
@@ -48,7 +50,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             if (folder.id == parentFolderId) folder.copy(subfolders = folder.subfolders + newSubfolder)
             else folder
         }
-        dataStore.save(current.copy(folders = updatedFolders, lastModified = Date()))
+        dataStore.saveImmediately(current.copy(folders = updatedFolders, lastModified = Date()))
     }
 
     fun deleteSubfolder(parentFolderId: String, subfolderId: String) {
@@ -57,7 +59,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             if (folder.id == parentFolderId) folder.copy(subfolders = folder.subfolders.filter { it.id != subfolderId })
             else folder
         }
-        dataStore.save(current.copy(folders = updatedFolders, lastModified = Date()))
+        dataStore.saveImmediately(current.copy(folders = updatedFolders, lastModified = Date()))
     }
 
     fun renameFolder(folderId: String, newName: String) {
@@ -71,7 +73,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 })
             }
         }
-        dataStore.save(current.copy(folders = updatedFolders, lastModified = Date()))
+        dataStore.saveImmediately(current.copy(folders = updatedFolders, lastModified = Date()))
     }
 
     // MARK: - Item Operations
@@ -100,7 +102,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val newItem = TodoItem(id = UUID.randomUUID().toString(), text = text)
         val current = appData.value
         val updatedFolders = transformFolderItems(current, folderId) { it + newItem }
-        dataStore.save(current.copy(folders = updatedFolders, lastModified = Date()))
+        dataStore.saveImmediately(current.copy(folders = updatedFolders, lastModified = Date()))
     }
 
     fun addChildItem(folderId: String, parentItemId: String, text: String) {
@@ -109,7 +111,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val updatedFolders = transformFolderItems(current, folderId) { items ->
             addChildToItems(items, parentItemId, newItem)
         }
-        dataStore.save(current.copy(folders = updatedFolders, lastModified = Date()))
+        dataStore.saveImmediately(current.copy(folders = updatedFolders, lastModified = Date()))
     }
 
     private fun addChildToItems(items: List<TodoItem>, parentId: String, newChild: TodoItem): List<TodoItem> {
@@ -125,7 +127,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleItemCompletion(folderId: String, itemId: String) {
         val current = appData.value
         val updatedFolders = transformFolderItems(current, folderId) { toggleCompletionInItems(it, itemId) }
-        dataStore.save(current.copy(folders = updatedFolders, lastModified = Date()))
+        dataStore.saveImmediately(current.copy(folders = updatedFolders, lastModified = Date()))
     }
 
     private fun toggleCompletionInItems(items: List<TodoItem>, itemId: String): List<TodoItem> {
@@ -152,7 +154,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteItem(folderId: String, itemId: String) {
         val current = appData.value
         val updatedFolders = transformFolderItems(current, folderId) { deleteFromItems(it, itemId) }
-        dataStore.save(current.copy(folders = updatedFolders, lastModified = Date()))
+        dataStore.saveImmediately(current.copy(folders = updatedFolders, lastModified = Date()))
     }
 
     private fun deleteFromItems(items: List<TodoItem>, itemId: String): List<TodoItem> {
@@ -164,7 +166,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun editItem(folderId: String, itemId: String, newText: String) {
         val current = appData.value
         val updatedFolders = transformFolderItems(current, folderId) { editInItems(it, itemId, newText) }
-        dataStore.save(current.copy(folders = updatedFolders, lastModified = Date()))
+        dataStore.saveImmediately(current.copy(folders = updatedFolders, lastModified = Date()))
     }
 
     private fun editInItems(items: List<TodoItem>, itemId: String, newText: String): List<TodoItem> {
@@ -172,6 +174,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             if (item.id == itemId) item.copy(text = newText)
             else item.copy(children = editInItems(item.children, itemId, newText))
         }
+    }
+
+    // MARK: - Backup & Restore
+
+    fun availableBackups(): List<BackupInfo> = dataStore.availableBackups()
+
+    fun restore(backup: BackupInfo) {
+        dataStore.restore(backup)
     }
 
     fun saveOnBackground() {
