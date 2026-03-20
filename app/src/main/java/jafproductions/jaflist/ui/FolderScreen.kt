@@ -249,6 +249,15 @@ fun FolderScreen(
                                 onClick = {
                                     if (newItemText.isNotBlank()) {
                                         appViewModel.addItem(folderId, newItemText.trim())
+                                        newItemText = ""
+                                    }
+                                }
+                            ) { Text("Save & Add") }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            TextButton(
+                                onClick = {
+                                    if (newItemText.isNotBlank()) {
+                                        appViewModel.addItem(folderId, newItemText.trim())
                                         showAddItemDialog = false
                                     }
                                 }

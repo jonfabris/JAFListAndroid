@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -33,6 +35,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -41,6 +44,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
@@ -90,6 +95,8 @@ private fun TodoItemRowContent(
     var showAddSubitemDialog by remember { mutableStateOf(false) }
     var newSubitemText by remember { mutableStateOf("") }
     var rawOffsetX by remember { mutableFloatStateOf(0f) }
+    var contentHeightPx by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
 
     val animatedOffset by animateFloatAsState(
         targetValue = rawOffsetX,
@@ -97,22 +104,22 @@ private fun TodoItemRowContent(
         label = "swipe_offset"
     )
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp)
-    ) {
-        // Background action buttons — anchored to the right edge
+    val buttonHeight = with(density) {
+        if (contentHeightPx > 0) contentHeightPx.toDp() else 48.dp
+    }
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        // Background action buttons — anchored to the right edge, height matches foreground content
         Row(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .height(48.dp)
+                .height(buttonHeight)
         ) {
             // Add Subitem (blue, left of delete)
             Box(
                 modifier = Modifier
                     .width(BUTTON_WIDTH_DP.dp)
-                    .height(48.dp)
+                    .fillMaxHeight()
                     .background(Color(0xFF1976D2))
                     .clickable {
                         newSubitemText = ""
@@ -131,7 +138,7 @@ private fun TodoItemRowContent(
             Box(
                 modifier = Modifier
                     .width(BUTTON_WIDTH_DP.dp)
-                    .height(48.dp)
+                    .fillMaxHeight()
                     .background(Color(0xFFD32F2F))
                     .clickable {
                         onDelete()
@@ -151,7 +158,7 @@ private fun TodoItemRowContent(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp)
+                .onSizeChanged { contentHeightPx = it.height }
                 .offset { IntOffset(animatedOffset.roundToInt(), 0) }
                 .pointerInput(item.id) {
                     detectHorizontalDragGestures(
@@ -172,6 +179,7 @@ private fun TodoItemRowContent(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .heightIn(min = 48.dp)
                     .padding(vertical = 7.dp, horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -201,7 +209,6 @@ private fun TodoItemRowContent(
                         BasicTextField(
                             value = editText,
                             onValueChange = { editText = it },
-                            singleLine = true,
                             textStyle = TextStyle(
                                 fontSize = 16.sp,
                                 color = MaterialTheme.colorScheme.onSurface
